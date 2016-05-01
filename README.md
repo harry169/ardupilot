@@ -1,4 +1,5 @@
 #ArduPilot Project#
+#给自己挖个大坑，打算学习一遍关于姿态的代码
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

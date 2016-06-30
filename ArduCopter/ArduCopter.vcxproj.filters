@@ -17,4 +17,9 @@
   <ItemGroup>
     <None Include="ArduCopter.pde" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.ArduCopter.vsarduino.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

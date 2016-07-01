@@ -98,7 +98,7 @@
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 
-// Application dependencies
+// Application dependencies应用依赖
 #include <GCS.h>
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_GPS.h>             // ArduPilot GPS library
@@ -147,17 +147,17 @@
 #include <AP_BoardConfig.h>     // board configuration library
 #include <AP_Frsky_Telem.h>
 #if SPRAYER == ENABLED
-#include <AC_Sprayer.h>         // crop sprayer library
+#include <AC_Sprayer.h>         // crop sprayer library 农作物喷雾器开关
 #endif
 #if EPM_ENABLED == ENABLED
-#include <AP_EPM.h>				// EPM cargo gripper stuff
+#include <AP_EPM.h>				// EPM cargo gripper stuff （Ekastic Plastic Membrance弹性塑料膜？）塑料物品抓取器
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute.h>		// Parachute release library
+#include <AP_Parachute.h>		// Parachute release library 降落伞释放库
 #endif
 #include <AP_Terrain.h>
 
-// AP_HAL to Arduino compatibility layer
+// AP_HAL to Arduino compatibility layer 硬件抽象兼容层
 #include "compat.h"
 // Configuration
 #include "defines.h"
@@ -184,7 +184,7 @@ static AP_HAL::BetterStream* cliSerial;
 // at the top to cooperate with the prototype mangler.
 
 ////////////////////////////////////////////////////////////////////////////////
-// AP_HAL instance
+// AP_HAL instance 硬件抽象层实例化
 ////////////////////////////////////////////////////////////////////////////////
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -194,7 +194,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Global parameters are all contained within the 'g' class.
-//
+// 全局变量
 static Parameters g;
 
 // main loop scheduler
@@ -210,13 +210,13 @@ static uint8_t command_ack_counter;
 static bool in_log_download;
 
 ////////////////////////////////////////////////////////////////////////////////
-// prototypes
+// prototypes 原型
 ////////////////////////////////////////////////////////////////////////////////
 static void update_events(void);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Dataflash
+// Dataflash 根据板卡设定闪存
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 static DataFlash_APM2 DataFlash;
@@ -230,7 +230,7 @@ static DataFlash_Empty DataFlash;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// the rate we run the main loop at
+// the rate we run the main loop at 设定主循环的频率
 ////////////////////////////////////////////////////////////////////////////////
 #if MAIN_LOOP_RATE == 400
 static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_400HZ;
@@ -239,16 +239,16 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Sensors
+// Sensors传感器
 ////////////////////////////////////////////////////////////////////////////////
 //
 // There are three basic options related to flight sensor selection.
-//
-// - Normal flight mode. Real sensors are used.
-// - HIL Attitude mode. Most sensors are disabled, as the HIL
-//   protocol supplies attitude information directly.
-// - HIL Sensors mode. Synthetic sensors are configured that
-//   supply data from the simulation.
+// 三种基本飞行模式的传感器工作状态是不同的
+// - Normal flight mode. Real sensors are used.正常模式，使用真是传感器
+// - HIL Attitude mode. Most sensors are disabled, as the HIL 硬件在环仿真模式，大部分传感器停用
+//   protocol supplies attitude information directly.协议之间支持姿态数据而不需要使用板卡的代码解算
+// - HIL Sensors mode. Synthetic sensors are configured that硬件在环传感器仿真模式，从模拟器获取数据
+//   supply data from the simulation得到人工传感器
 //
 
 static AP_GPS  gps;
@@ -257,7 +257,7 @@ static GPS_Glitch gps_glitch(gps);
 
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
-
+// 根据气压计配置板卡，实例化类
 #if CONFIG_BARO == HAL_BARO_BMP085
 static AP_Baro_BMP085 barometer;
 #elif CONFIG_BARO == HAL_BARO_PX4
@@ -274,7 +274,7 @@ static AP_Baro_MS5611 barometer(&AP_Baro_MS5611::spi);
  #error Unrecognized CONFIG_BARO setting
 #endif
 static Baro_Glitch baro_glitch(barometer);
-
+// 配置磁力计
 #if CONFIG_COMPASS == HAL_COMPASS_PX4
 static AP_Compass_PX4 compass;
 #elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
@@ -293,13 +293,13 @@ AP_ADC_ADS7844 apm1_adc;
 
 AP_InertialSensor ins;
 
-// Inertial Navigation EKF
+// Inertial Navigation EKF 惯性导航，拓展卡尔曼滤波
 #if AP_AHRS_NAVEKF_AVAILABLE
 AP_AHRS_NavEKF ahrs(ins, barometer, gps);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
-
+// 软件在环仿真
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 SITL sitl;
 #endif
@@ -312,7 +312,7 @@ static void exit_mission();
 AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Optical flow sensor
+// Optical flow sensor 光流传感器
 ////////////////////////////////////////////////////////////////////////////////
  #if OPTFLOW == ENABLED
 static AP_OpticalFlow_ADNS3080 optflow;
@@ -325,14 +325,14 @@ static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 ////////////////////////////////////////////////////////////////////////////////
-// SONAR
+// SONAR 声纳
 #if CONFIG_SONAR == ENABLED
 static RangeFinder sonar;
 static bool sonar_enabled = true; // enable user switch for sonar
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// User variables
+// User variables用户变量
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef USERHOOK_VARIABLES
  #include USERHOOK_VARIABLES
@@ -343,6 +343,7 @@ static bool sonar_enabled = true; // enable user switch for sonar
 ////////////////////////////////////////////////////////////////////////////////
 
 /* Radio values
+ * 电台参数值
  *               Channel assignments
  *                       1	Ailerons (rudder if no ailerons)
  *                       2	Elevator
@@ -356,7 +357,7 @@ static bool sonar_enabled = true; // enable user switch for sonar
  *               See libraries/RC_Channel/RC_Channel_aux.h for more information
  */
 
-//Documentation of GLobals:
+//Documentation of GLobals: 全局文件
 static union {
     struct {
         uint8_t home_is_set         : 1; // 0
@@ -414,7 +415,7 @@ static struct {
 } failsafe;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Motor Output
+// Motor Output 电机输出 
 ////////////////////////////////////////////////////////////////////////////////
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
@@ -458,7 +459,7 @@ float tuning_value;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// GPS variables
+// GPS variables GPS 变变量
 ////////////////////////////////////////////////////////////////////////////////
 // We use atan2 and other trig techniques to calaculate angles
 // We need to scale the longitude up to make these calcs work
@@ -468,7 +469,7 @@ static float scaleLongUp = 1;
 static float scaleLongDown = 1;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Location & Navigation
+// Location & Navigation 位置与导航
 ////////////////////////////////////////////////////////////////////////////////
 // This is the angle from the copter to the next waypoint in centi-degrees
 static int32_t wp_bearing;
@@ -481,28 +482,28 @@ static uint32_t wp_distance;
 static uint8_t land_state;              // records state of land (flying to location, descending)
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auto
+// Auto 自动模式
 ////////////////////////////////////////////////////////////////////////////////
 static AutoMode auto_mode;   // controls which auto controller is run
 
 ////////////////////////////////////////////////////////////////////////////////
-// Guided
+// Guided 引导模式
 ////////////////////////////////////////////////////////////////////////////////
 static GuidedMode guided_mode;  // controls which controller is run (pos or vel)
 
 ////////////////////////////////////////////////////////////////////////////////
-// RTL
+// RTL 返航模式
 ////////////////////////////////////////////////////////////////////////////////
 RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
 bool rtl_state_complete; // set to true if the current state is completed
 
 ////////////////////////////////////////////////////////////////////////////////
-// Circle
+// Circle 转圈模式
 ////////////////////////////////////////////////////////////////////////////////
 bool circle_pilot_yaw_override; // true if pilot is overriding yaw
 
 ////////////////////////////////////////////////////////////////////////////////
-// SIMPLE Mode
+// SIMPLE Mode 简单模式
 ////////////////////////////////////////////////////////////////////////////////
 // Used to track the orientation of the copter for Simple mode. This value is reset at each arming
 // or in SuperSimple mode when the copter leaves a 20m radius from home.
@@ -551,7 +552,7 @@ static AP_Frsky_Telem frsky_telemetry(ahrs, battery);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Altitude
+// Altitude 高度
 ////////////////////////////////////////////////////////////////////////////////
 // The cm/s we are moving up or down based on filtered data - Positive = UP
 static int16_t climb_rate;
@@ -564,7 +565,7 @@ static float baro_climbrate;        // barometer climbrate in cm/s
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// 3D Location vectors
+// 3D Location vectors 三维位置矢量
 ////////////////////////////////////////////////////////////////////////////////
 // Current location of the copter
 static struct   Location current_loc;
@@ -622,7 +623,7 @@ static uint32_t condition_start;
 static float G_Dt = 0.02;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Inertial Navigation
+// Inertial Navigation 惯性导航
 ////////////////////////////////////////////////////////////////////////////////
 #if AP_AHRS_NAVEKF_AVAILABLE
 static AP_InertialNav_NavEKF inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
@@ -648,7 +649,7 @@ static AC_WPNav wp_nav(inertial_nav, ahrs, pos_control);
 static AC_Circle circle_nav(inertial_nav, ahrs, pos_control);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Performance monitoring
+// Performance monitoring 性能监测
 ////////////////////////////////////////////////////////////////////////////////
 static int16_t pmTest1;
 
@@ -671,7 +672,7 @@ static AP_Relay relay;
 static AP_ServoRelayEvents ServoRelayEvents(relay);
 
 //Reference to the camera object (it uses the relay object inside it)
-#if CAMERA == ENABLED
+#if CAMERA == ENABLED // 相机
   static AP_Camera camera(&relay);
 #endif
 
@@ -702,14 +703,14 @@ AC_Fence    fence(&inertial_nav);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Rally library
+// Rally library 集结
 ////////////////////////////////////////////////////////////////////////////////
 #if AC_RALLY == ENABLED
 AP_Rally rally(ahrs);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Crop Sprayer
+// Crop Sprayer 喷雾器
 ////////////////////////////////////////////////////////////////////////////////
 #if SPRAYER == ENABLED
 static AC_Sprayer sprayer(&inertial_nav);
@@ -756,7 +757,7 @@ static void pre_arm_checks(bool display_failure);
 
 // setup the var_info table
 AP_Param param_loader(var_info);
-
+/*选择主循环频率*/
 #if MAIN_LOOP_RATE == 400
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
@@ -892,7 +893,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
 #endif
 };
 #endif
-
+/*setup初始化*/
 
 void setup() 
 {
@@ -941,7 +942,7 @@ static void perf_update(void)
     perf_info_reset();
     pmTest1 = 0;
 }
-
+// 主循环
 void loop()
 {
     // wait for an INS sample

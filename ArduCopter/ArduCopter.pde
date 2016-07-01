@@ -88,7 +88,7 @@
 #include <AP_Menu.h>
 #include <AP_Param.h>
 #include <StorageManager.h>
-// AP_HAL
+// AP_HAL Ó²¼þ³éÏó²ã
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
